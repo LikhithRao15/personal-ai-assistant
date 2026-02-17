@@ -1,6 +1,8 @@
-# pip3 indstall SpeechRecognition==3.8.1
+# pip3 indstall SpeechRecognition
 # pip3 indstall mtranslate
-# pip3 indstall colorma
+# pip3 indstall colorama
+# pip3 indstall pyaudio
+
 
 
 import speech_recognition as sr

@@ -1,2 +1,3 @@
-from speechToText import Speech_to_text
-Speech_to_text()
+from likki_STT import listen
+
+listen()

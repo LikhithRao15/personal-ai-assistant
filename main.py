@@ -20,7 +20,8 @@ def main():
             if response:
                 speak(response)
             else:
-                speak("I did not understand that command.")
+                ai_response = ask_ai(text)
+                speak(ai_response)
 
 if __name__ == "__main__":
     main()

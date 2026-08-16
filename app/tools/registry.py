@@ -24,11 +24,14 @@ class ToolRegistry:
     def list_tools(self):
         return list(self.tools.values())
 
-    def execute(self, name: str, arguments: dict):
+    def execute(self, name: str, arguments: dict | None = None):
 
         tool = self.get(name)
 
         if not tool:
             raise ValueError(f"Tool '{name}' not found.")
+
+        if arguments is None:
+            arguments = {}
 
         return tool["function"](**arguments)

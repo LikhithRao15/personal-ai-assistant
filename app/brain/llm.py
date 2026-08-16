@@ -1,4 +1,5 @@
 from openai import OpenAI
+from app.brain.tool_executor import ToolExecutor
 
 from app.config.settings import (
     OPENAI_API_KEY,
@@ -20,6 +21,8 @@ class AIBrain:
         self.model = MODEL_NAME
 
         self.tools = create_tool_registry()
+
+        self.tool_executor = ToolExecutor(self.tools)
 
         self.conversation = []
 
@@ -74,6 +77,191 @@ Rules:
                 "additionalProperties": False
             },
             "strict": True
+        },
+        {
+            "type": "function",
+            "name": "list_directory",
+            "description": (
+                "List files and folders inside an allowed directory. "
+                "Allowed locations include Desktop, Documents and Downloads."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": (
+                            "Directory path to inspect, such as "
+                            "~/Downloads or ~/Documents."
+                        )
+                    }
+                },
+                "required": ["path"],
+                "additionalProperties": False
+            },
+            "strict": True
+        },
+        {
+            "type": "function",
+            "name": "search_files",
+            "description": (
+                "Search recursively for files inside an allowed directory. "
+                "Use patterns such as *.pdf, *.py, *.jpg, *.docx or resume*."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "directory": {
+                        "type": "string",
+                        "description": (
+                            "Allowed directory to search, such as "
+                            "~/Downloads or ~/Documents."
+                        )
+                    },
+                    "pattern": {
+                        "type": "string",
+                        "description": (
+                            "Filename pattern such as *.pdf, *.py or resume*."
+                        )
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return."
+                    }
+                },
+                "required": [
+                    "directory",
+                    "pattern",
+                    "max_results"
+                ],
+                "additionalProperties": False
+            },
+            "strict": True
+        },
+        {
+            "type": "function",
+            "name": "read_file",
+            "description": (
+                "Read the contents of an allowed text-based file. "
+                "Use this when the user asks to read, inspect, "
+                "understand or summarize a file."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": (
+                            "Path to the file, such as "
+                            "~/Downloads/nexus_test.txt."
+                        )
+                    }
+                },
+                "required": [
+                    "path"
+                ],
+                "additionalProperties": False
+            },
+            "strict": True
+        },
+        {
+            "type": "function",
+            "name": "read_pdf",
+            "description": (
+                "Extract text from a PDF document. "
+                "Use this when the user asks to read, analyze, "
+                "or summarize a PDF."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the PDF document."
+                    }
+                },
+                "required": [
+                    "path"
+                ],
+                "additionalProperties": False
+            },
+            "strict": True
+        },
+        {
+            "type": "function",
+            "name": "read_docx",
+            "description": (
+                "Extract text from a Word DOCX document. "
+                "Use this when the user asks to read, analyze, "
+                "or summarize a DOCX file."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the DOCX document."
+                    }
+                },
+                "required": [
+                    "path"
+                ],
+                "additionalProperties": False
+            },
+            "strict": True
+        },
+        {
+            "type": "function",
+            "name": "create_directory",
+            "description": (
+                "Create a new directory inside an allowed location. "
+                "Use this when the user asks to create a folder."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": (
+                            "Path for the new directory, such as "
+                            "~/Documents/AI Projects."
+                        )
+                    }
+                },
+                "required": [
+                    "path"
+                ],
+                "additionalProperties": False
+            },
+            "strict": True
+        },
+        {
+            "type": "function",
+            "name": "write_file",
+            "description": (
+                "Create or overwrite a text file inside an allowed location. "
+                "Use this when the user explicitly asks to create or write "
+                "content into a file."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Destination file path."
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Complete content to write into the file."
+                    }
+                },
+                "required": [
+                    "path",
+                    "content"
+                ],
+                "additionalProperties": False
+            },
+            "strict": True
         }
         ]
 
@@ -95,78 +283,37 @@ Rules:
 
     def process_response(self, response):
 
-        tool_calls = [
-            item
-            for item in response.output
-            if item.type == "function_call"
-        ]
+        while True:
 
-        if not tool_calls:
+            tool_outputs = []
 
-            answer = response.output_text
+            for tool_call in response.output:
 
-            self.conversation.append({
-                "role": "assistant",
-                "content": answer
-            })
+                if tool_call.type != "function_call":
+                    continue
 
-            return answer
-
-        for tool_call in tool_calls:
-
-            tool_name = tool_call.name
-
-            if tool_name == "system_info":
-
-                result = self.tools.execute(
-                    "system_info",
-                    {}
+                tool_output = self.tool_executor.execute(
+                    tool_call
                 )
 
-                tool_result = {
-                    "type": "function_call_output",
-                    "call_id": tool_call.call_id,
-                    "output": str(result)
-                }
+                tool_outputs.append(
+                    tool_output)
 
-                response = self.client.responses.create(
-                    model=self.model,
-                    instructions=self.instructions,
-                    previous_response_id=response.id,
-                    input=[tool_result],
-                    tools=self.get_tool_definitions()
-             
-                )
-            elif tool_name == "open_application":
+            if not tool_outputs:
 
-                import json
+                answer = response.output_text
 
-                arguments = json.loads(tool_call.arguments)
+                self.conversation.append({
+                    "role": "assistant",
+                    "content": answer
+                })
 
-                result = self.tools.execute(
-                    "open_application",
-                    arguments
-                )
+                return answer
 
-                tool_result = {
-                    "type": "function_call_output",
-                    "call_id": tool_call.call_id,
-                    "output": str(result)
-                }
-
-                response = self.client.responses.create(
-                    model=self.model,
-                    instructions=self.instructions,
-                    previous_response_id=response.id,
-                    input=[tool_result],
-                    tools=self.get_tool_definitions()
-    )
-
-        answer = response.output_text
-
-        self.conversation.append({
-            "role": "assistant",
-            "content": answer
-        })
-
-        return answer
+            response = self.client.responses.create(
+            model=self.model,
+            instructions=self.instructions,
+            previous_response_id=response.id,
+            input=tool_outputs,
+            tools=self.get_tool_definitions()
+        )

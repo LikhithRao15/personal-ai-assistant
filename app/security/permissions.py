@@ -15,11 +15,19 @@ TOOL_PERMISSIONS = {
 
     "open_application": PermissionLevel.SAFE,
 
+    "list_directory": PermissionLevel.SAFE,
+
     "search_files": PermissionLevel.SAFE,
 
     "read_file": PermissionLevel.SAFE,
 
-    "create_file": PermissionLevel.MODERATE,
+    "read_pdf": PermissionLevel.SAFE,
+
+    "read_docx": PermissionLevel.SAFE,
+
+    "create_directory": PermissionLevel.MODERATE,
+
+    "write_file": PermissionLevel.MODERATE,
 
     "move_file": PermissionLevel.MODERATE,
 

@@ -5,6 +5,7 @@ from app.tools.filesystem import (list_directory,search_files)
 from app.tools.file_reader import read_file
 from app.tools.document_reader import (read_pdf,read_docx)
 from app.tools.file_writer import (create_directory,write_file)
+from app.tools.terminal import execute_command
 
 def create_tool_registry():
 
@@ -88,4 +89,14 @@ def create_tool_registry():
     ),
     function=write_file
     )
+
+    registry.register(
+    name="terminal_execute",
+    description=(
+        "Execute a terminal command on the Mac. "
+        "Use this for running programs, tests, development "
+        "commands and inspecting command output."
+    ),
+    function=execute_command
+)
     return registry

@@ -4,6 +4,7 @@ from pathlib import Path
 HOME = Path.home()
 
 ALLOWED_DIRECTORIES = {
+    "home":Path.home(),
     "Desktop": HOME / "Desktop",
     "Documents": HOME / "Documents",
     "Downloads": HOME / "Downloads",

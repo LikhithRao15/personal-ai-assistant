@@ -262,6 +262,47 @@ Rules:
                 "additionalProperties": False
             },
             "strict": True
+        },
+        {
+            "type": "function",
+            "name": "terminal_execute",
+            "description": (
+                "Execute a terminal command on the Mac. "
+                "Use this when the user explicitly asks to run "
+                "a command, program, test, development server, "
+                "or inspect terminal output."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": (
+                            "The terminal command to execute."
+                        )
+                    },
+                    "working_directory": {
+                        "type": "string",
+                        "description": (
+                            "Directory where the command should run. "
+                            "Use ~ when no specific directory is required."
+                        )
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "description": (
+                            "Maximum execution time in seconds."
+                        )
+                    }
+                },
+                "required": [
+                    "command",
+                    "working_directory",
+                    "timeout"
+                ],
+                "additionalProperties": False
+            },
+            "strict": True
         }
         ]
 
